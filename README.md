@@ -28,8 +28,10 @@ node post.mjs latest --pr estiva-app/leaf#140      # the result as a comment: ve
 
 `--expect` takes `peek`, `ship`, `leaf` and `id`, comma-separated; it is the run's step 0, and the run does not start
 (exit 2) when the commit is not served within 15 minutes. A relay change has no version here: `/land` waits for it
-with its own `wait-live.sh relay`, then runs without `--expect`. Screenshots of failed steps go to this repository's
-`runs` branch, and the comment shows them from there; `--note <file>` adds `/land`'s reading of a failure under it.
+with its own `wait-live.sh relay`, then runs without `--expect`. Screenshots of failed steps go to the private
+repository estiva-app/smoke-runs and the comment links them: they show production as the test accounts see it, the
+company team's rooms included, so they never go anywhere public. `--note <file>` puts `/land`'s reading of a failure
+at the top of the comment.
 
 When a step fails, `/land` runs that flow again on the version before the change, served to the test only:
 

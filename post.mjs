@@ -6,8 +6,9 @@
  *   node post.mjs latest --pr estiva-app/leaf#140 --note what-land-did.md  with /land's reading of a failure under it
  *   node post.mjs latest --dry                                            print the comment, post nothing
  *
- * Screenshots go to this repository's `runs` branch (made on first use, with no history of the code), under the run's
- * time, and the comment shows them from there. Prints the comment's address.
+ * Screenshots go to the private repository estiva-app/smoke-runs, under the run's time, and the comment links them:
+ * they show production as the test accounts see it, the company team's rooms included, so they are never public, and
+ * only the organisation's members can open them. Prints the comment's address.
  */
 import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -15,7 +16,7 @@ import { basename, join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 const SELF = 'estiva-app/smoke'
-const BRANCH = 'runs'
+const SHOTS = 'estiva-app/smoke-runs'
 const here = new URL('.', import.meta.url).pathname
 
 const args = process.argv.slice(2)
@@ -32,37 +33,29 @@ if (dir === 'latest') {
   dir = join(here, 'out', runs.at(-1))
 }
 const result = JSON.parse(readFileSync(join(dir, 'result.json'), 'utf8'))
-// Screenshot lines name the file only: the folder is this machine's, and the comment is public.
-const text = readFileSync(join(dir, 'result.txt'), 'utf8').trim().replace(/(screenshot: )\S*\/([^/\s]+\.png)/g, '$1$2')
+// The comment is public: screenshot lines name the file only (the folder is this machine's), and the run's relay
+// request counts, which nobody reading a pull request needs, stay in out/ (busy answers and leftovers are in the verdict).
+const text = readFileSync(join(dir, 'result.txt'), 'utf8')
+  .trim()
+  .replace(/(screenshot: )\S*\/([^/\s]+\.png)/g, '$1$2')
+  .replace(/^\d+ s; relay requests .*$/m, `${result.seconds} s`)
 const stamp = basename(dir)
 
 const gh = (...a) => execFileSync('gh', a, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
 
-/** The `runs` branch, made once as a commit with no parent, so screenshots never mix with the code's history. */
-function ensureBranch() {
-  try {
-    gh('api', `repos/${SELF}/branches/${BRANCH}`, '--jq', '.name')
-    return
-  } catch {}
-  const blob = gh('api', `repos/${SELF}/git/blobs`, '-f', 'content=Screenshots of failed smoke-test steps, one folder per run (post.mjs).\n', '-f', 'encoding=utf-8', '--jq', '.sha')
-  const tree = gh('api', `repos/${SELF}/git/trees`, '-f', 'tree[][path]=README.md', '-f', 'tree[][mode]=100644', '-f', 'tree[][type]=blob', '-f', `tree[][sha]=${blob}`, '--jq', '.sha')
-  const commit = gh('api', `repos/${SELF}/git/commits`, '-f', 'message=Screenshots of failed smoke-test steps', '-f', `tree=${tree}`, '--jq', '.sha')
-  gh('api', `repos/${SELF}/git/refs`, '-f', `ref=refs/heads/${BRANCH}`, '-f', `sha=${commit}`)
-}
-
-/** Upload one screenshot and return the address it is shown from. */
+/** Upload one screenshot to the private repository and return the address members open it at. */
 function upload(file) {
   const path = `${stamp}/${basename(file)}`
-  const url = `https://raw.githubusercontent.com/${SELF}/${BRANCH}/${path}`
+  const url = `https://github.com/${SHOTS}/blob/main/${path}`
   try {
     // Posted before (the same run again, with a note): the screenshot is already there.
-    gh('api', `repos/${SELF}/contents/${path}?ref=${BRANCH}`, '--jq', '.sha')
+    gh('api', `repos/${SHOTS}/contents/${path}`, '--jq', '.sha')
     return url
   } catch {}
   const body = join(tmpdir(), `smoke-upload-${process.pid}.json`)
-  writeFileSync(body, JSON.stringify({ message: `${stamp}: ${basename(file)}`, branch: BRANCH, content: readFileSync(file).toString('base64') }))
+  writeFileSync(body, JSON.stringify({ message: `${stamp}: ${basename(file)}`, content: readFileSync(file).toString('base64') }))
   try {
-    gh('api', '-X', 'PUT', `repos/${SELF}/contents/${path}`, '--input', body, '--jq', '.content.path')
+    gh('api', '-X', 'PUT', `repos/${SHOTS}/contents/${path}`, '--input', body, '--jq', '.content.path')
   } finally {
     rmSync(body, { force: true })
   }
@@ -84,14 +77,15 @@ const short = (commit) => String(commit).slice(0, 7)
 lines.push(`Versions tested: ${Object.entries(result.versions).map(([app, commit]) => `${app} \`${short(commit)}\``).join(' · ')}${result.served.length ? ` — served to the test only: ${result.served.join(', ')}` : ''}`)
 for (const e of result.expected ?? []) lines.push(`- ${e.ok ? '✅' : '❌'} ${e.app} serves \`${short(e.commit)}\` or later${e.ok ? '' : `: ${e.error}`}`)
 lines.push('')
+// /land's reading comes first: whether anything needs a person, before the detail of what failed.
+if (note) lines.push(note, '')
 
 if (notServed.length) lines.push('Nothing was tested: the deploy under test was not served.', '')
 if (failed.length) {
-  if (!dry) ensureBranch()
   lines.push('**Failed**', '')
   for (const step of failed) {
     lines.push(`- Flow ${step.flow.id} (${step.flow.title}): **${step.name}** — ${step.error ?? ''}`)
-    if (step.screenshot && existsSync(step.screenshot)) lines.push('', `  ![${step.name}](${dry ? step.screenshot : upload(step.screenshot)})`, '')
+    if (step.screenshot && existsSync(step.screenshot)) lines.push(`  [Screenshot](${dry ? step.screenshot : upload(step.screenshot)}) (private)`)
   }
   lines.push('')
 }
@@ -103,7 +97,6 @@ if (known.length) {
 const noted = steps.filter((step) => step.note)
 for (const step of noted) lines.push(`- Note, flow ${step.flow.id}: ${step.note}`)
 if (noted.length) lines.push('')
-if (note) lines.push(note, '')
 lines.push('<details><summary>Every step</summary>', '', '```', text, '```', '', '</details>')
 lines.push('', `<sub>[The smoke test](https://github.com/${SELF}) walks the core flows in [CORE-FLOWS.md](https://github.com/${SELF}/blob/main/CORE-FLOWS.md) as Smoke Test 1 and 2.</sub>`)
 const comment = lines.join('\n')
