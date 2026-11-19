@@ -10,7 +10,8 @@
  * to stderr. Exit 1 when the build fails.
  */
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, rmSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, join, resolve } from 'node:path'
 
@@ -55,7 +56,9 @@ if (!existsSync(src)) {
 execFileSync('git', ['-C', src, 'fetch', '--quiet', 'origin'], quiet)
 const commit = git('rev-parse', '--verify', `${ref}^{commit}`)
 
-const name = `${app}-${commit.slice(0, 12)}${patch ? `-${basename(patch).replace(/\.patch$/, '')}` : ''}`
+// A patch is named by its content too, so an edited plant is built again.
+const patchId = patch ? `-${basename(patch).replace(/\.patch$/, '')}-${createHash('sha256').update(readFileSync(patch)).digest('hex').slice(0, 8)}` : ''
+const name = `${app}-${commit.slice(0, 12)}${patchId}`
 const work = join(cache, 'builds', name)
 const out = join(work, dist)
 if (existsSync(join(out, 'index.html'))) {

@@ -35,6 +35,8 @@ for (let i = 0; i < args.length; i += 2) {
     process.exit(2)
   }
 }
+// An app served from a local build is not the deployed one: waiting for production to serve it would test nothing.
+for (const app of Object.keys(options.serve)) delete options.expect[app]
 
 const here = new URL('.', import.meta.url).pathname
 const standing = JSON.parse(readFileSync(join(here, 'standing.json'), 'utf8'))

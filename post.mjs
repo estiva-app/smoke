@@ -10,7 +10,7 @@
  * time, and the comment shows them from there. Prints the comment's address.
  */
 import { execFileSync } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { tmpdir } from 'node:os'
 
@@ -32,7 +32,8 @@ if (dir === 'latest') {
   dir = join(here, 'out', runs.at(-1))
 }
 const result = JSON.parse(readFileSync(join(dir, 'result.json'), 'utf8'))
-const text = readFileSync(join(dir, 'result.txt'), 'utf8').trim()
+// Screenshot lines name the file only: the folder is this machine's, and the comment is public.
+const text = readFileSync(join(dir, 'result.txt'), 'utf8').trim().replace(/(screenshot: )\S*\/([^/\s]+\.png)/g, '$1$2')
 const stamp = basename(dir)
 
 const gh = (...a) => execFileSync('gh', a, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
@@ -52,10 +53,20 @@ function ensureBranch() {
 /** Upload one screenshot and return the address it is shown from. */
 function upload(file) {
   const path = `${stamp}/${basename(file)}`
+  const url = `https://raw.githubusercontent.com/${SELF}/${BRANCH}/${path}`
+  try {
+    // Posted before (the same run again, with a note): the screenshot is already there.
+    gh('api', `repos/${SELF}/contents/${path}?ref=${BRANCH}`, '--jq', '.sha')
+    return url
+  } catch {}
   const body = join(tmpdir(), `smoke-upload-${process.pid}.json`)
   writeFileSync(body, JSON.stringify({ message: `${stamp}: ${basename(file)}`, branch: BRANCH, content: readFileSync(file).toString('base64') }))
-  gh('api', '-X', 'PUT', `repos/${SELF}/contents/${path}`, '--input', body, '--jq', '.content.path')
-  return `https://raw.githubusercontent.com/${SELF}/${BRANCH}/${path}`
+  try {
+    gh('api', '-X', 'PUT', `repos/${SELF}/contents/${path}`, '--input', body, '--jq', '.content.path')
+  } finally {
+    rmSync(body, { force: true })
+  }
+  return url
 }
 
 const steps = result.flows.flatMap((flow) => flow.steps.map((step) => ({ ...step, flow })))
@@ -104,4 +115,8 @@ if (dry) {
 const [repo, number] = pr.split('#')
 const file = join(tmpdir(), `smoke-comment-${process.pid}.md`)
 writeFileSync(file, comment)
-console.log(gh('pr', 'comment', number, '-R', repo, '--body-file', file))
+try {
+  console.log(gh('pr', 'comment', number, '-R', repo, '--body-file', file))
+} finally {
+  rmSync(file, { force: true })
+}
