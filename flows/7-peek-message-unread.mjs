@@ -12,14 +12,6 @@ import { seeText, until } from '../lib/ui.mjs'
 
 /** How long a new message may take to light the row. */
 const LIVE_MS = 30_000
-/**
- * Open in Peek since 19 Nov, and only sometimes: a full run failed at the last step once, then passed alone. Until it
- * is closed, that step reports it as known, so `/land` does not revert a deploy over it.
- */
-const UNREAD_ROOM_BUG = {
-  addr: '30851:b38fd2687b17bbde2e8079577cba601936acfe1b731d2d2ba7cdef29a063db46:6ede0068-4f72-45b2-9fd3-7dc8d8e44517',
-  title: 'Opening an unread room sometimes does not show the new message',
-}
 
 /** Whether the room's row in Peek's sidebar is lit: true, false, or null while the row is not drawn. */
 const rowLit = (d) => {
@@ -71,7 +63,6 @@ export default {
     },
     {
       name: 'Peek: Smoke Test 1 opens the room, reads the message, and the row is quiet again',
-      known: UNREAD_ROOM_BUG,
       async run(t) {
         const d = dOf(t.standing.room)
         const page = t.at(await t.one.open('peek', `/topic/${d}`))
