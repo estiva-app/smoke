@@ -1,0 +1,153 @@
+/**
+ * The smoke test: walk the core flows on production as Smoke Test 1 and Smoke Test 2, and say which step failed.
+ *
+ *   node run.mjs                         every flow
+ *   node run.mjs --flow 1,4              some of them
+ *   node run.mjs --serve peek=<dist>     that app answered from a local build, only for this run's browser
+ *   node run.mjs --json out/result.json  the result as JSON as well
+ *
+ * Exit 0 when every step passed or failed on a known, still-open bug; 1 on any other failure; 2 when the run could
+ * not start. Screenshots of failed steps and the result go to `out/<started>/`.
+ */
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { account, launch, peekSlotVersion } from './lib/browser.mjs'
+import { issueOpen, summary, versions } from './lib/report.mjs'
+
+const args = process.argv.slice(2)
+const options = { flow: null, serve: {}, json: null }
+for (let i = 0; i < args.length; i += 2) {
+  const [name, value] = [args[i], args[i + 1]]
+  if (name === '--flow') options.flow = new Set(value.split(','))
+  else if (name === '--serve') {
+    const [app, dist] = value.split('=')
+    options.serve[app] = dist
+  } else if (name === '--json') options.json = value
+  else {
+    console.error(`unknown option ${name}`)
+    process.exit(2)
+  }
+}
+
+const here = new URL('.', import.meta.url).pathname
+const standing = JSON.parse(readFileSync(join(here, 'standing.json'), 'utf8'))
+const flows = []
+for (const file of readdirSync(join(here, 'flows')).filter((f) => /^\d.*\.mjs$/.test(f)).sort())
+  flows.push((await import(join(here, 'flows', file))).default)
+const chosen = flows.filter((flow) => !options.flow || options.flow.has(flow.id))
+
+const started = new Date()
+const stamp = started.toISOString().replace(/[:.]/g, '-')
+const outDir = join(here, 'out', stamp)
+mkdirSync(outDir, { recursive: true })
+
+const result = {
+  startedAt: started.toISOString(),
+  versions: await versions().catch((error) => {
+    console.error(`The run could not start: no app versions (${error.message})`)
+    process.exit(2)
+  }),
+  served: Object.keys(options.serve),
+  flows: [],
+  requests: [],
+  busy: [],
+  leftovers: [],
+}
+
+const browser = await launch()
+const made = []
+try {
+  const peekSlot = await peekSlotVersion(result.versions.peek)
+  const one = await account(browser, 1, { serve: options.serve, peekSlot })
+  const two = await account(browser, 2, { serve: options.serve, peekSlot })
+  const t = {
+    one,
+    two,
+    standing,
+    stamp: started.toISOString().slice(0, 16).replace('T', ' '),
+    /** What later flows share: the run's own issue, made once. */
+    state: {},
+    /** The page a step is looking at, for its screenshot when it fails. */
+    page: null,
+    at(page) {
+      t.page = page
+      return page
+    },
+    /** Something the run made, and how to remove it; removed in reverse at the end, whatever happened. */
+    made(what, remove) {
+      made.push({ what, remove })
+    },
+  }
+
+  for (const flow of chosen) {
+    const record = { id: flow.id, title: flow.title, steps: [] }
+    result.flows.push(record)
+    let stopped = null
+    for (const step of flow.steps) {
+      const began = Date.now()
+      const entry = { name: step.name, status: 'passed', ms: 0 }
+      record.steps.push(entry)
+      if (stopped) {
+        entry.status = 'skipped'
+        entry.error = `after "${stopped}" failed`
+        continue
+      }
+      t.page = null
+      try {
+        await step.run(t)
+        if (step.known) {
+          const open = issueOpen(step.known.addr)
+          if (open) entry.note = `passed although "${step.known.title}" is open: is it fixed?`
+        }
+      } catch (error) {
+        entry.error = String(error.message ?? error).split('\n')[0].slice(0, 400)
+        if (t.page) {
+          entry.screenshot = join(outDir, `${flow.id}-${record.steps.length}.png`)
+          await t.page.screenshot({ path: entry.screenshot }).catch(() => (entry.screenshot = undefined))
+        }
+        // Known only while its issue is read as open; unreadable (no `ship` CLI) fails, so a fixed bug's return is never hidden.
+        const open = step.known ? issueOpen(step.known.addr) : false
+        if (step.known && open === true) {
+          entry.status = 'known'
+          entry.known = { title: step.known.title, link: `https://ship.estiva.app/issue/${step.known.addr.split(':')[2]}` }
+        } else {
+          entry.status = 'failed'
+          if (step.known) entry.error += open === null ? ` — could not read whether "${step.known.title}" is still open` : ` — "${step.known.title}" is closed, so this is no longer known`
+          if (!step.continues) stopped = step.name
+        }
+      }
+      entry.ms = Date.now() - began
+    }
+  }
+
+  for (const { what, remove } of made.reverse()) {
+    try {
+      await remove()
+    } catch (error) {
+      result.leftovers.push(`${what}: ${String(error.message ?? error).split('\n')[0]}`)
+    }
+  }
+  for (const me of [one, two]) {
+    await me.settled().catch((error) => result.leftovers.push(`Smoke Test ${me.n}: ${error.message}`))
+    result.requests.push({ n: me.n, http: me.stats.http, frames: me.stats.frames, pacedSeconds: Math.round((me.stats.pacedMs ?? 0) / 1000) })
+    result.busy.push(...me.stats.busy.map((busy) => ({ n: me.n, ...busy })))
+    result.stuck = [...(result.stuck ?? []), ...me.stats.stuck.map((what) => `Smoke Test ${me.n} ${what}`)]
+  }
+} catch (error) {
+  console.error(`The run could not go on: ${error.stack ?? error}`)
+  result.error = String(error.message ?? error)
+} finally {
+  await browser.close()
+}
+
+result.seconds = Math.round((Date.now() - started.getTime()) / 1000)
+result.versionsAfter = await versions()
+result.versionsChanged = JSON.stringify(result.versionsAfter) !== JSON.stringify(result.versions)
+const steps = result.flows.flatMap((flow) => flow.steps)
+result.ok = !result.error && steps.every((step) => step.status !== 'failed') && result.busy.length === 0 && result.leftovers.length === 0
+const text = summary(result)
+writeFileSync(join(outDir, 'result.json'), `${JSON.stringify(result, null, 2)}\n`)
+writeFileSync(join(outDir, 'result.txt'), `${text}\n`)
+if (options.json) writeFileSync(options.json, `${JSON.stringify(result, null, 2)}\n`)
+console.log(text)
+process.exit(result.error ? 2 : result.ok ? 0 : 1)

@@ -1,0 +1,13 @@
+diff --git a/src/components/ui/MessageBody.tsx b/src/components/ui/MessageBody.tsx
+index 405aa10f..1447c577 100644
+--- a/src/components/ui/MessageBody.tsx
++++ b/src/components/ui/MessageBody.tsx
+@@ -180,6 +180,8 @@ export function MessageBody({ body, resolvedObjects, urgentMentions, parts, embe
+     than a chip with nothing in it. A link on words stays a link.
+   */
+   const resolveLink = (url: string) => {
++    // PLANTED BREAK (smoke test a01a48dc, never merged): Peek no longer recognises a Leaf document's link.
++    if (url.includes('/document/')) return undefined
+     const value = claimed(url)
+     const reference = value ? referenceOfValue(value) : undefined
+     return reference && reachable(reference) ? value : undefined
