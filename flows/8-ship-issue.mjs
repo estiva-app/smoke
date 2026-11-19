@@ -36,9 +36,10 @@ export default {
       name: 'Ship: Smoke Test 2 comments on it',
       async run(t) {
         // Flow 4 has Smoke Test 2 comment on this issue while it is open next door; alone, this flow comments itself.
-        if (t.state.liveWords) return
-        t.state.liveWords = `A comment from Smoke Test 2, ${t.stamp}.`
+        if (t.state.liveSent) return
+        t.state.liveWords = `A comment from Smoke Test 2 in Ship, ${t.stamp}.`
         await commentInShip(t, t.two, t.state.issue, t.state.liveWords)
+        t.state.liveSent = true
       },
     },
     {

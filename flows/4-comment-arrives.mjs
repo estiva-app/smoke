@@ -45,6 +45,8 @@ export default {
       async run(t) {
         t.state.liveWords = `A comment from Smoke Test 2, ${t.stamp}.`
         await commentInShip(t, t.two, t.state.issue, t.state.liveWords)
+        // Flow 8 checks this comment instead of making its own: only once it was really sent.
+        t.state.liveSent = true
         t.state.livePostedAt = Date.now()
       },
     },

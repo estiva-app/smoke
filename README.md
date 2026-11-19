@@ -7,7 +7,7 @@ Smoke Test 2, in the QA team. It runs in a real browser and does what a person d
 
 ```bash
 npm ci
-node run.mjs                     # all ten flows, about 7–8 minutes
+node run.mjs                     # all ten flows, about 10 minutes (617 s on 19 Nov)
 node run.mjs --flow 2,4          # only some
 node run.mjs --serve leaf=../leaf/dist   # serve a local build of one app to the test only, at its real address
 ```
