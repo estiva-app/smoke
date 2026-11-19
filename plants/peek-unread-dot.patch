@@ -1,0 +1,13 @@
+diff --git a/src/components/views/FileTreeView.tsx b/src/components/views/FileTreeView.tsx
+index 6a8d9f7e..16bb392e 100644
+--- a/src/components/views/FileTreeView.tsx
++++ b/src/components/views/FileTreeView.tsx
+@@ -234,7 +234,7 @@ export function TreeRow({
+ 
+   // The open file's row is brought into view by the package's `NavTree` around the Folders (ui 0.94): a long Folder can hold it below the fold (5 October).
+   const selected = file.ref === selectedRef
+-  const isUnread = unread?.[file.ref] === true
++  const isUnread = false // plant: no row is ever unread
+   const type = fileGlyph(file.kind)
+   /*
+     Archive… on a listed row, Unarchive on an archived one (the Archive view,

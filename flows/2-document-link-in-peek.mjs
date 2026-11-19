@@ -6,26 +6,10 @@
  * link alone on its line draws as a card). The run deletes the message.
  */
 import { dOf } from '../lib/apps.mjs'
-import { click, seeText, until } from '../lib/ui.mjs'
+import { BOX, deleteMessage } from '../lib/peek.mjs'
+import { seeText, until } from '../lib/ui.mjs'
 
 const DOCUMENT = 'Smoke test: a document'
-/** Peek's composer is named for its topic. */
-const BOX = 'main [contenteditable=true][aria-label="Smoke test"]'
-
-async function deleteMessage(me, room, words) {
-  const page = await me.open('peek', `/topic/${dOf(room)}`)
-  await seeText(page, words, { timeout: 90_000 })
-  // The message's own menu, never the topic's "More actions" in the header: that one deletes the topic (19 Nov).
-  const message = page.getByText(words).first()
-  await message.hover()
-  // Its row's buttons, on hover: React, Reply, Resolve, More actions.
-  const row = message.locator('xpath=ancestor::*[.//button[@aria-label="React"]][1]')
-  await row.getByRole('button', { name: 'More actions' }).click()
-  await click(page, /^Delete/)
-  const confirm = page.getByRole('alertdialog')
-  if (await confirm.count()) await confirm.getByRole('button', { name: /^Delete/ }).click()
-  await me.settled()
-}
 
 export default {
   id: '2',

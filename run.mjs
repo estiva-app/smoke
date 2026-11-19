@@ -32,7 +32,7 @@ for (let i = 0; i < args.length; i += 2) {
 const here = new URL('.', import.meta.url).pathname
 const standing = JSON.parse(readFileSync(join(here, 'standing.json'), 'utf8'))
 const flows = []
-for (const file of readdirSync(join(here, 'flows')).filter((f) => /^\d.*\.mjs$/.test(f)).sort())
+for (const file of readdirSync(join(here, 'flows')).filter((f) => /^\d.*\.mjs$/.test(f)).sort((a, b) => parseInt(a) - parseInt(b)))
   flows.push((await import(join(here, 'flows', file))).default)
 const chosen = flows.filter((flow) => !options.flow || options.flow.has(flow.id))
 
@@ -56,6 +56,8 @@ const result = {
 
 const browser = await launch()
 const made = []
+/** Browsers a flow opened besides the two accounts' own (`t.fresh`): their requests and busy answers count too. */
+const extra = []
 try {
   const peekSlot = await peekSlotVersion(result.versions.peek)
   const one = await account(browser, 1, { serve: options.serve, peekSlot })
@@ -65,6 +67,8 @@ try {
     two,
     standing,
     stamp: started.toISOString().slice(0, 16).replace('T', ' '),
+    /** One word only this run's titles hold, so search can find them: search matches the starts of words. */
+    word: `r${started.getTime().toString(36).slice(-6)}`,
     /** What later flows share: the run's own issue, made once. */
     state: {},
     /** The page a step is looking at, for its screenshot when it fails. */
@@ -76,6 +80,12 @@ try {
     /** Something the run made, and how to remove it; removed in reverse at the end, whatever happened. */
     made(what, remove) {
       made.push({ what, remove })
+    },
+    /** A new browser for account `n` that holds only Estiva ID's sign-in cookie, as a person arriving fresh. Close it. */
+    async fresh(n) {
+      const me = await account(browser, n, { serve: options.serve, peekSlot })
+      extra.push(me)
+      return me
     },
   }
 
@@ -127,9 +137,9 @@ try {
       result.leftovers.push(`${what}: ${String(error.message ?? error).split('\n')[0]}`)
     }
   }
-  for (const me of [one, two]) {
+  for (const me of [one, two, ...extra]) {
     await me.settled().catch((error) => result.leftovers.push(`Smoke Test ${me.n}: ${error.message}`))
-    result.requests.push({ n: me.n, http: me.stats.http, frames: me.stats.frames, pacedSeconds: Math.round((me.stats.pacedMs ?? 0) / 1000) })
+    result.requests.push({ n: me.n, http: me.stats.http, frames: me.stats.frames, pacedSeconds: Math.round((me.stats.pacedMs ?? 0) / 1000), ...(extra.includes(me) ? { fresh: true } : {}) })
     result.busy.push(...me.stats.busy.map((busy) => ({ n: me.n, ...busy })))
     result.stuck = [...(result.stuck ?? []), ...me.stats.stuck.map((what) => `Smoke Test ${me.n} ${what}`)]
   }
