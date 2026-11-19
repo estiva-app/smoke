@@ -22,6 +22,8 @@ async function findAndOpen(t, me, query, title) {
     const offered = await page.getByRole('option').allInnerTexts().catch(() => [])
     throw new Error(`no "${title}" among the answers for "${query}"; it offered: ${offered.map((o) => o.split('\n')[0]).slice(0, 6).join(' / ') || 'nothing'}`)
   })
+  // Opening the answer bursts as a page open does, right after the page's own: let the first leave the window.
+  await me.calm()
   await answer.click()
   await seeText(page, title, { timeout: 60_000, scope: 'main' })
 }
