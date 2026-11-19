@@ -1,7 +1,7 @@
 # Smoke test
 
 After every deploy, a change in one app that breaks the app next to it should be caught by a run on production, not
-by Miky or Katerina. For now it is run by hand; `/land` will run it after each deploy. This walks ten core flows in
+by Miky or Katerina. `/land` runs it after every deploy (below). This walks ten core flows in
 Peek, Ship and Leaf (five next door, five in each app's own basics) as two test accounts of its own, Smoke Test 1 and
 Smoke Test 2, in the QA team. It runs in a real browser and does what a person does.
 
@@ -16,6 +16,30 @@ It exits 0 when every step passed or is known, 1 when a step failed, and 2 when 
 `out/<time>/result.txt` and `result.json`. These name each app's version (`/version.json`), mark each step passed,
 failed, known or skipped, and hold a screenshot of each failed step. They also give the run's time and relay
 requests, any "busy" answer from the relay, and anything the run could not remove.
+
+## After a deploy
+
+`/land` runs the whole test once the merged change is live, and puts the result on the pull request:
+
+```bash
+node run.mjs --expect leaf=<merge commit>          # waits until Leaf serves it (or later), then walks every flow
+node post.mjs latest --pr estiva-app/leaf#140      # the result as a comment: versions, every step, failed screenshots
+```
+
+`--expect` takes `peek`, `ship`, `leaf` and `id`, comma-separated; it is the run's step 0, and the run does not start
+(exit 2) when the commit is not served within 15 minutes. A relay change has no version here: `/land` waits for it
+with its own `wait-live.sh relay`, then runs without `--expect`. Screenshots of failed steps go to this repository's
+`runs` branch, and the comment shows them from there; `--note <file>` adds `/land`'s reading of a failure under it.
+
+When a step fails, `/land` runs that flow again on the version before the change, served to the test only:
+
+```bash
+node run.mjs --flow 2 --serve leaf=$(node before.mjs leaf <merge commit>^)
+```
+
+`before.mjs <peek|ship|leaf> <commit> [--patch <file>]` builds that app at the commit with production's settings and
+prints the build's folder. Sources and builds are kept in `~/.cache/estiva-smoke/`, so the same commit builds once.
+Estiva ID and the relay cannot be served this way; for them the version before is the last run before the deploy.
 
 ## The ten flows
 
@@ -63,12 +87,12 @@ To show that a step really catches its app breaking, build that app with the bre
 - **Leaf** at `6413522` with `plants/leaf-comment-place.patch`: a comment forgets the words it is on. It fails at
   "opened again, the line and its comment are there", its card saying "On the whole document" (flow 9).
 
-The three plants of 19 Nov leave an import unused, so build them with `npx vite build` rather than `npm run build`.
-Ship builds to `dist/ship`, and reads `RELAY_URL`, `ID_BASE` and `CLIENT_ID` (its deploy workflow).
+Build a plant with `before.mjs`, which applies the patch and builds with production's settings (with `vite build`
+alone, since a plant can leave an import unused), then serve it:
 
-Build either one with its production settings (`VITE_RELAY_URL=https://estiva.estiva.app`, plus Leaf's
-`VITE_ESTIVA_ID_ORIGIN` and `VITE_ESTIVA_ID_CLIENT_ID` from its deploy workflow), then run
-`node run.mjs --serve <app>=<its dist>`.
+```bash
+node run.mjs --flow 8 --serve ship=$(node before.mjs ship 7e3e219 --patch plants/ship-status.patch)
+```
 
 ## The relay's limit
 
