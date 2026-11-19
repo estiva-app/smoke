@@ -8,7 +8,7 @@
  * - Leaf: the issue opens as a page: its title, its text, the picture as a card with its thumbnail, and its
  *   conversation beside it.
  * - An issue with no text opens in Leaf's editor, empty, and what is typed there is the issue's text in Ship
- *   (leaf#137). Leaf hides the conversation of an issue with no description (an open bug).
+ *   (leaf#137), with its conversation beside it (fixed by leaf#137 too, 19 Nov).
  */
 import { openFile, peekPanel } from '../lib/apps.mjs'
 import { runIssue } from '../lib/runIssue.mjs'
@@ -18,10 +18,6 @@ const ISSUE = 'Smoke test: an issue with a picture'
 const TEXT = 'A standing issue the smoke test opens in Peek, Ship and Leaf after every deploy.'
 const COMMENT = 'A standing comment the smoke test reads in every app.'
 const PICTURE = 'smoke-picture.png'
-const NO_DESCRIPTION_BUG = {
-  addr: '30851:b38fd2687b17bbde2e8079577cba601936acfe1b731d2d2ba7cdef29a063db46:6b4bf85f-0b43-41bd-b691-257a412389e5',
-  title: 'Leaf hides the conversation of an issue with no description',
-}
 
 /** A picture drawn as its card: the file name, with a loaded thumbnail beside it — not the name alone. */
 function pictureDrawn(page, name) {
@@ -46,6 +42,9 @@ export default {
         const page = await openFile(t, t.one, 'peek', 'issue', t.standing.issue, COMMENT)
         await peekPanel(page)
         await seeText(page, ISSUE)
+        // The bug this project began with: Peek's panel showed the issue's picture as its file name in plain text.
+        const asText = await page.evaluate((name) => document.body.innerText.includes(name), PICTURE)
+        if (asText) throw new Error(`Peek shows the picture as the text "${PICTURE}"`)
       },
     },
     {
@@ -74,7 +73,6 @@ export default {
     },
     {
       name: 'Leaf: the issue with no text shows its conversation',
-      known: NO_DESCRIPTION_BUG,
       continues: true,
       async run(t) {
         const page = t.at(await t.one.open('leaf', `/issue/${t.state.issue.d}`))

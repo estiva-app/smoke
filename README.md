@@ -1,7 +1,7 @@
 # Smoke test
 
 After every deploy, a change in one app that breaks the app next to it should be caught by a run on production, not
-by Miky or Katerina. This walks the five next-door flows in Peek, Ship and Leaf as two test accounts of its own,
+by Miky or Katerina. For now it is run by hand; `/land` will run it after each deploy. This walks the five next-door flows in Peek, Ship and Leaf as two test accounts of its own,
 Smoke Test 1 and Smoke Test 2, in the QA team. It runs in a real browser and does what a person does.
 
 ```bash

@@ -43,7 +43,10 @@ mkdirSync(outDir, { recursive: true })
 
 const result = {
   startedAt: started.toISOString(),
-  versions: await versions(),
+  versions: await versions().catch((error) => {
+    console.error(`The run could not start: no app versions (${error.message})`)
+    process.exit(2)
+  }),
   served: Object.keys(options.serve),
   flows: [],
   requests: [],
@@ -102,13 +105,14 @@ try {
           entry.screenshot = join(outDir, `${flow.id}-${record.steps.length}.png`)
           await t.page.screenshot({ path: entry.screenshot }).catch(() => (entry.screenshot = undefined))
         }
+        // Known only while its issue is read as open; unreadable (no `ship` CLI) fails, so a fixed bug's return is never hidden.
         const open = step.known ? issueOpen(step.known.addr) : false
-        if (step.known && open !== false) {
+        if (step.known && open === true) {
           entry.status = 'known'
-          entry.known = { title: step.known.title, link: `https://ship.estiva.app/issue/${step.known.addr.split(':')[2]}`, ...(open === null ? { note: 'could not read whether it is still open' } : {}) }
+          entry.known = { title: step.known.title, link: `https://ship.estiva.app/issue/${step.known.addr.split(':')[2]}` }
         } else {
           entry.status = 'failed'
-          if (step.known) entry.error += ` — "${step.known.title}" is closed, so this is no longer known`
+          if (step.known) entry.error += open === null ? ` — could not read whether "${step.known.title}" is still open` : ` — "${step.known.title}" is closed, so this is no longer known`
           if (!step.continues) stopped = step.name
         }
       }

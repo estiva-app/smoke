@@ -24,6 +24,9 @@ try {
     await deleteShipComment(await account(browser, Number(n)), { d }, words)
   } else if (what === 'events') {
     const [n, words, yes] = rest
+    // Empty words match every event, the standing comment included: listing them is fine, deleting them is not.
+    if (yes === '--yes' && !/^[0-9a-f]{64}$/.test(words ?? '') && (words ?? '').trim().length < 8)
+      throw new Error('clean.mjs events: --yes needs an event id or at least 8 characters of its words')
     const me = await account(browser, Number(n))
     const signer = await signerOf(me)
     const found = (await signer.query([{ kinds: [1111, 9, 11], authors: [me.pubkey], limit: 500 }])).filter((e) => e.id === words || e.content.includes(words))
