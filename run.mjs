@@ -5,6 +5,8 @@
  *   node run.mjs --flow 1,4              some of them
  *   node run.mjs --serve peek=<dist>     that app answered from a local build, only for this run's browser
  *   node run.mjs --json out/result.json  the result as JSON as well
+ *   node run.mjs --expect leaf=<commit>  first wait until that app serves the commit or a later one (`/land`, after a
+ *                                        deploy; peek, ship, leaf, id; comma-separated for several)
  *
  * Exit 0 when every step passed or failed on a known, still-open bug; 1 on any other failure; 2 when the run could
  * not start. Screenshots of failed steps and the result go to `out/<started>/`.
@@ -12,22 +14,29 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { account, launch, peekSlotVersion } from './lib/browser.mjs'
-import { issueOpen, summary, versions } from './lib/report.mjs'
+import { awaitServed, issueOpen, summary, versions } from './lib/report.mjs'
 
 const args = process.argv.slice(2)
-const options = { flow: null, serve: {}, json: null }
+const options = { flow: null, serve: {}, expect: {}, json: null }
 for (let i = 0; i < args.length; i += 2) {
   const [name, value] = [args[i], args[i + 1]]
   if (name === '--flow') options.flow = new Set(value.split(','))
   else if (name === '--serve') {
     const [app, dist] = value.split('=')
     options.serve[app] = dist
+  } else if (name === '--expect') {
+    for (const pair of value.split(',')) {
+      const [app, commit] = pair.split('=')
+      options.expect[app] = commit
+    }
   } else if (name === '--json') options.json = value
   else {
     console.error(`unknown option ${name}`)
     process.exit(2)
   }
 }
+// An app served from a local build is not the deployed one: waiting for production to serve it would test nothing.
+for (const app of Object.keys(options.serve)) delete options.expect[app]
 
 const here = new URL('.', import.meta.url).pathname
 const standing = JSON.parse(readFileSync(join(here, 'standing.json'), 'utf8'))
@@ -41,8 +50,23 @@ const stamp = started.toISOString().replace(/[:.]/g, '-')
 const outDir = join(here, 'out', stamp)
 mkdirSync(outDir, { recursive: true })
 
+/** `--expect`: the run starts only once each named app serves the deploy under test; otherwise it tested nothing new. */
+const expected = Object.keys(options.expect).length ? await awaitServed(options.expect) : []
+if (expected.some((e) => !e.ok)) {
+  const result = { startedAt: started.toISOString(), versions: await versions(), served: [], expected, flows: [], requests: [], busy: [], leftovers: [], seconds: 0, ok: false, error: 'the deploy under test is not served' }
+  const text = `${summary(result)}\nThe run did not start: the deploy under test is not served.`
+  writeFileSync(join(outDir, 'result.json'), `${JSON.stringify(result, null, 2)}\n`)
+  writeFileSync(join(outDir, 'result.txt'), `${text}\n`)
+  if (options.json) writeFileSync(options.json, `${JSON.stringify(result, null, 2)}\n`)
+  console.log(text)
+  process.exit(2)
+}
+
+/** The walk's own time, without the wait for the deploy. */
+const walkFrom = Date.now()
 const result = {
   startedAt: started.toISOString(),
+  expected,
   versions: await versions().catch((error) => {
     console.error(`The run could not start: no app versions (${error.message})`)
     process.exit(2)
@@ -150,7 +174,7 @@ try {
   await browser.close()
 }
 
-result.seconds = Math.round((Date.now() - started.getTime()) / 1000)
+result.seconds = Math.round((Date.now() - walkFrom) / 1000)
 result.versionsAfter = await versions()
 result.versionsChanged = JSON.stringify(result.versionsAfter) !== JSON.stringify(result.versions)
 const steps = result.flows.flatMap((flow) => flow.steps)
