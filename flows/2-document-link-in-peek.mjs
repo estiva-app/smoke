@@ -1,5 +1,5 @@
 /**
- * 2. A document made in Leaf opens from its link in Peek, and the link draws as a card.
+ * 2. A Leaf document's link draws as the document in Peek.
  *
  * What a person sees today: Smoke Test 1 pastes the standing document's Leaf link into a message in the QA team's
  * "Smoke test" topic in Peek and sends it. In the message the link draws as the document's chip, with its title (a

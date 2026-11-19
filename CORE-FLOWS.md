@@ -81,7 +81,7 @@ brackets. A ticket in one app reads its own section and the flows it shares with
   Test 2 sets its status to In Progress`, `Ship: Smoke Test 2 comments on it`, `Ship: opened again, the issue shows In
   Progress and the comment`)
 - **10. Search.** The issue Ship made is found by its title in Peek's search. Ship's own search is only its `[` link
-  list.
+  list. (`Peek: search finds the issue by the start of its title, and opens it`)
 
 ## Leaf
 
@@ -102,4 +102,4 @@ brackets. A ticket in one app reads its own section and the flows it shares with
   the line and the comment are there. (`Leaf: Smoke Test 2 makes a document in the QA team`, `Leaf: Smoke Test 2 writes
   a line in it`, `Leaf: Smoke Test 2 comments on the line`, `Leaf: opened again, the line and its comment are there`)
 - **10. Search.** A document made in Leaf is found by its title in Peek's search. Leaf's own search is only its `[`
-  link list.
+  link list. (`Peek: search finds the document by the start of its title, and opens it`)
