@@ -12,8 +12,8 @@ deploy.
 - **Who decides:** adding a flow or cutting one is Miky's call. Whoever proposes it brings the moment it was missed or
   the reason it no longer matters. A flow comes in with the smoke test's steps that walk it, and goes out with them.
 
-A ticket that changes how a core flow looks or works says so in its pull request and updates the flow here and in its
-smoke test file in the same change. A ticket that adds something new does not add a flow: most things a person can do
+A ticket that changes how a core flow looks or works says so in its pull request, and updates the flow here and its
+smoke test file in a pull request to this repository, named in the app's pull request and merged with it. A ticket that adds something new does not add a flow: most things a person can do
 are not core, and are checked by that ticket's own Done when.
 
 ## The ten flows
@@ -70,7 +70,9 @@ brackets. A ticket in one app reads its own section and the flows it shares with
 - **3. A topic.** A person opens a topic. Its page lists its issue under Issues and its document under Documents.
   (`Ship: the topic page lists the issue and the document`)
 - **4. A comment.** A person comments on an issue, and the people who have it open in Peek and Leaf see it arrive.
-  (`Ship: Smoke Test 2 comments on the issue`)
+  Typing in the comment box as soon as it shows keeps every letter (an open bug since 19 Nov: Ship redraws the box,
+  and letters are lost). (`Ship: typing in the comment box as soon as it shows keeps every letter`, `Ship: Smoke Test 2
+  comments on the issue`)
 - **5. A mention.** A person mentions someone in a comment, and the comment reaches that person's Desk in Peek.
   (`Ship: Smoke Test 2 mentions Smoke Test 1 in a comment`)
 - **6. Sign in once.** Ship opens signed in after Estiva ID. (flow 6's step)
