@@ -19,26 +19,9 @@ requests, any "busy" answer from the relay, and anything the run could not remov
 
 ## The ten flows
 
-Each flow's file says, at its top, what a person sees today. Next door:
-
-1. **An issue made in Ship opens in Peek and in Leaf.** The standing issue, which has text, a picture and a second
-   person's comment, opens in Peek and in Leaf. A new issue with only a title opens in Leaf's editor with its
-   conversation, and words typed there are its text in Ship.
-2. **A Leaf document's link draws as the document in Peek.** A message with the link shows the document's title.
-3. **A topic shows its issue and its document in Peek, Ship and Leaf.**
-4. **A second person's comment arrives in Peek and Leaf without reloading.**
-5. **A mention in a Ship comment reaches the person on Peek's Desk.**
-
-Each app:
-
-6. **Sign in, and still be signed in when the next app opens.** A new browser signed in to Estiva ID only opens Peek,
-   Ship and Leaf, each signed in with no click.
-7. **Peek: a message in a topic shows as unread to the other person.** The room's row turns blue for Smoke Test 1
-   without a reload, and is quiet again once they have read it.
-8. **Ship: an issue made, its status changed and a comment added**, all still there when it is opened again.
-9. **Leaf: a document made, written in and commented on a block**, all still there when it is opened again.
-10. **Search finds the issue and the document by title**, in Peek's search box (Ship and Leaf have none), and opens
-    them. A run's titles carry a word of their own (`r` and six letters), since search matches the starts of words.
+The flows are listed in [CORE-FLOWS.md](CORE-FLOWS.md), as a person sees them in each app, with the steps here that
+walk each one and how a flow gets in or out. Each flow's file says, at its top, what a person sees today. A run's
+titles carry a word of their own (`r` and six letters), since search matches the starts of words.
 
 ## What it keeps, and what it removes
 
