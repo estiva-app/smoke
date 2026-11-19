@@ -1,0 +1,16 @@
+{
+  "name": "@estiva-app/smoke",
+  "private": true,
+  "type": "module",
+  "description": "The smoke test after every deploy: Peek, Ship and Leaf on production, as two test accounts of its own.",
+  "scripts": {
+    "smoke": "node run.mjs",
+    "test": "node --test lib/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "playwright-core": "1.61.1"
+  }
+}
