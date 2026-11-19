@@ -1,0 +1,13 @@
+diff --git a/src/pages/IssuePage.tsx b/src/pages/IssuePage.tsx
+index 081a117..8294c2c 100644
+--- a/src/pages/IssuePage.tsx
++++ b/src/pages/IssuePage.tsx
+@@ -348,7 +348,7 @@ export function IssuePage({ state, directory, archives, d, say, refresh }: { sta
+           status: issue.status,
+           // Each with its colour, so the picker draws the status's shape (ONE-6, step 4b).
+           statuses: unlistedFirst(issue.status, ISSUE_STATUSES),
+-          onStatusChange: (value) => void set('status', value, `Status → ${value}`),
++          onStatusChange: () => {}, // plant: a status change is never saved
+           assignee: issue.assignee ?? '',
+           people,
+           onAssigneeChange: (value) => void set('assignee', value, value ? 'Assign' : 'Unassign'),

@@ -1,0 +1,13 @@
+diff --git a/src/comments/comments.ts b/src/comments/comments.ts
+index 8badebf..1ad20b2 100644
+--- a/src/comments/comments.ts
++++ b/src/comments/comments.ts
+@@ -249,7 +249,7 @@ export async function postComment(doc: Commented, written: Written, anchor?: Anc
+   // Signed out says so at once, not after the links' answers (up to 5 s), as an edit does.
+   const pubkey = viewerPubkey()
+   if (!pubkey) return send(null)
+-  const place = anchor ? [blockRunTag(anchor.blocks), ...(anchor.quote ? [quoteTag(anchor.quote)] : [])] : []
++  const place: string[][] = anchor ? [] : [] // plant: a comment forgets the words it is on
+   const tags = [...place, ...(await earnedTags(written, { file: doc.address })), ...embedTagsOf(written.cards ?? [])]
+   return send(buildComment(pubkey, Date.now(), { about: doc.address, folder: doc.folder, body: written.text, files: written.files, tags }))
+ }
