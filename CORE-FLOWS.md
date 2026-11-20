@@ -58,9 +58,11 @@ brackets. A ticket in one app reads its own section and the flows it shares with
   the room. Without a reload, the row's dot turns blue. They open the room, read the message, and the row is quiet
   again. (`Peek: the room turns unread for Smoke Test 1 without reloading`, `Peek: Smoke Test 1 opens the room, reads
   the message, and the row is quiet again`)
-- **10. Search.** A person presses Search Peek (Ctrl+K) and types the start of an issue's or a document's title. It is
-  among the answers, and choosing it opens it. Search matches the starts of words. (`Peek: search finds the issue by
-  the start of its title, and opens it`, `Peek: search finds the document by the start of its title, and opens it`)
+- **10. Search.** A person presses Search Peek (Ctrl+K) and types a word or two from the start of an issue's or a
+  document's title. It is among the answers, and choosing it opens it. Search matches the starts of words. From the
+  third word the box is a prompt; a whole title typed there still lists the file it names. (`Peek: search finds the
+  issue by the start of its title, and opens it`, `Peek: search finds the document by the start of its title, and
+  opens it`, `Peek: a whole title typed as a sentence still finds the issue, and opens it`)
 
 ## Ship
 
