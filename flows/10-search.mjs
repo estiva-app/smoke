@@ -5,6 +5,10 @@
  * inside their `[` link list. Smoke Test 2 types the start of the run's issue's title, and the issue is among the
  * answers; choosing it opens it. The same for the run's document (flow 9's; alone, this flow searches the standing
  * one). Search matches the starts of words, so the run's titles carry a word of their own.
+ *
+ * The box is a search up to two words and a prompt from the third (Peek's "a third word turns the search into a
+ * prompt"), so the search steps type two words. A whole title typed as a sentence still lists the file it names,
+ * under the prompt; the last step holds that.
  */
 import { runIssue } from '../lib/runIssue.mjs'
 import { click, seeText } from '../lib/ui.mjs'
@@ -37,14 +41,22 @@ export default {
       continues: true,
       async run(t) {
         const issue = await runIssue(t)
-        await findAndOpen(t, t.two, `Smoke run ${t.word}`, issue.title)
+        await findAndOpen(t, t.two, `Smoke ${t.word}`, issue.title)
       },
     },
     {
       name: 'Peek: search finds the document by the start of its title, and opens it',
+      continues: true,
       async run(t) {
         const doc = t.state.document
-        await findAndOpen(t, t.two, doc ? `Smoke run ${t.word}` : 'Smoke test: a doc', doc?.title ?? STANDING_DOCUMENT)
+        await findAndOpen(t, t.two, doc ? `Smoke ${t.word}` : 'Smoke doc', doc?.title ?? STANDING_DOCUMENT)
+      },
+    },
+    {
+      name: 'Peek: a whole title typed as a sentence still finds the issue, and opens it',
+      async run(t) {
+        const issue = await runIssue(t)
+        await findAndOpen(t, t.two, `Smoke run ${t.word} issue`, issue.title)
       },
     },
   ],
