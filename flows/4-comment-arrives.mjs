@@ -11,11 +11,6 @@ import { seeText } from '../lib/ui.mjs'
 
 /** How long a live comment may take to arrive. */
 const LIVE_MS = 20_000
-/** Open in Ship since 19 Nov; until it is closed, the typing step reports it as known and the run still passes. */
-const TYPING_BUG = {
-  addr: '30851:b38fd2687b17bbde2e8079577cba601936acfe1b731d2d2ba7cdef29a063db46:8cbecd05-5777-4a76-a6a3-9d73bd9b3b01',
-  title: 'Typing right after an issue opens loses letters: the comment box is redrawn',
-}
 
 export default {
   id: '4',
@@ -34,7 +29,6 @@ export default {
     },
     {
       name: 'Ship: typing in the comment box as soon as it shows keeps every letter',
-      known: TYPING_BUG,
       continues: true,
       async run(t) {
         await typeOnArrival(t, t.two, t.state.issue, 'Typed as soon as the box showed')

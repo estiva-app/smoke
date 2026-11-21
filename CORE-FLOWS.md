@@ -72,8 +72,7 @@ brackets. A ticket in one app reads its own section and the flows it shares with
 - **3. A topic.** A person opens a topic. Its page lists its issue under Issues and its document under Documents.
   (`Ship: the topic page lists the issue and the document`)
 - **4. A comment.** A person comments on an issue, and the people who have it open in Peek and Leaf see it arrive.
-  Typing in the comment box as soon as it shows keeps every letter (an open bug since 19 Nov: Ship redraws the box,
-  and letters are lost). (`Ship: typing in the comment box as soon as it shows keeps every letter`, `Ship: Smoke Test 2
+  Typing in the comment box as soon as it shows keeps every letter. (`Ship: typing in the comment box as soon as it shows keeps every letter`, `Ship: Smoke Test 2
   comments on the issue`)
 - **5. A mention.** A person mentions someone in a comment, and the comment reaches that person's Desk in Peek.
   (`Ship: Smoke Test 2 mentions Smoke Test 1 in a comment`)
