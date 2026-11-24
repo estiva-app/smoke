@@ -81,8 +81,10 @@ brackets. A ticket in one app reads its own section and the flows it shares with
   on it. Opened again, the issue shows In Progress and the comment. (`Ship: Smoke Test 1 adds an issue`, `Ship: Smoke
   Test 2 sets its status to In Progress`, `Ship: Smoke Test 2 comments on it`, `Ship: opened again, the issue shows In
   Progress and the comment`)
-- **10. Search.** The issue Ship made is found by its title in Peek's search. Ship's own search is only its `[` link
-  list. (`Peek: search finds the issue by the start of its title, and opens it`)
+- **10. Search.** The issue Ship made is found by its title in Peek's search, and in Ship's own: Search Ship (Ctrl+K)
+  in its top bar finds it by the start of its title and opens it in Ship, and lists a Leaf document saying it opens in
+  Leaf (KIN-6). (`Peek: search finds the issue by the start of its title, and opens it`, `Ship: search finds the issue
+  by the start of its title, and opens it`, `Ship: search lists the document, saying it opens in Leaf`)
 
 ## Leaf
 
